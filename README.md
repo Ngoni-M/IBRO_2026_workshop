@@ -2,7 +2,11 @@
 
 This guide is for **Windows users** who need to install WSL before the workshop.
 
-WSL lets you run a Linux environment, such as Ubuntu, inside Windows. Although MAC users dont need to install WSL, as their built in terminal is sufficent, it is recommended that they also use VSCODE for the workshop. Unless they are super familiar with another editor.
+WSL lets you run a Linux environment, such as Ubuntu, inside Windows. 
+
+### MAC users:
+
+Although MAC users dont need to install WSL, as their built in terminal is sufficent, it is recommended that they also use VSCODE for the workshop. Unless they are super familiar with another editor.
 
 ---
 
@@ -165,6 +169,27 @@ If you get an error mentioning **virtualization**, **BIOS**, or **Virtual Machin
 
 ---
 
+## Plan B for Windows: Cygwin
+
+If WSL setup is blocked or unreliable, Windows users can use **Cygwin** as a fallback Unix-like terminal.
+
+1. Go to the official Cygwin website and download the Windows installer: <https://www.cygwin.com/>
+2. Note where the installer was downloaded and keep it somewhere easy to find, such as your **Downloads** folder. You will use this same installer again later if you need to add Cygwin features.
+3. Run the installer and accept the default setup options.
+4. When you reach the package selection screen, search for:
+
+```text
+rsync
+```
+
+5. In the **rsync** row, click the value in the **New** column until it changes from **Skip** to a version number.
+6. Continue through the installer and finish the setup.
+7. Open the **Cygwin Terminal** from the Start menu and use that terminal for workshop commands if WSL is not working.
+
+No other extra Cygwin packages are needed at this point. If you get stuck during installation, read the instructions on the Cygwin landing page first, because they explain the installer steps and common setup choices.
+
+---
+
 ## VS Code and WSL
 
 ### 1. Install the VS Code extensions
@@ -185,7 +210,9 @@ The **WSL** extension lets VS Code connect to Ubuntu.
 
 VS Code profiles let you keep workshop settings separate from your normal VS Code setup.
 
-In VS Code, click:
+You can either create a new profile yourself, or import the example profile included in this repository.
+
+To create a new profile yourself, click:
 
 ```text
 Manage → Profiles → Create Profile
@@ -198,6 +225,40 @@ Shell
 ```
 
 Then use this profile during the workshop.
+
+To import the example profile, first download or open this repository folder. Then, in VS Code, click:
+
+```text
+Manage → Profiles → Import Profile...
+```
+
+Choose:
+
+```text
+Select File...
+```
+
+Then select:
+
+```text
+vscode_examples/Shell.code-profile
+```
+
+This profile is provided as an **example**, not as a profile everyone should use unchanged. It was created on the instructor's machine, so it includes settings and extensions for that setup, including Codex from ChatGPT.
+
+After importing it:
+
+1. Review the extensions VS Code wants to install or enable.
+2. Keep the shell, WSL, terminal, and font-size settings if they are useful. (MAC users: remove WSL as it is not needed)
+3. Change or remove any AI assistant settings that do not match your own setup.
+4. If you use a different assistant, install and configure that assistant instead.
+5. Save the adapted profile under your own name, such as (Keep it short!):
+
+```text
+Shell
+```
+
+The important idea is to use `vscode_examples/Shell.code-profile` as a starting point for a workshop-friendly shell setup, then adjust it before relying on it.
 
 ---
 

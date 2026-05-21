@@ -1,0 +1,423 @@
+#! /bin/bash
+
+# TODO: Order into functions
+# TODO: Method for running UCT double RMS scans
+# TODO: Method for running NIFTIS
+
+# Example for RERUN:
+
+# clustersurfManual -d SchizophreniaDicoms -subj Schizophrenia6
+# clustersurfManual -f "-all" -d SchizophreniaDicoms -subj Schizophrenia6 -type MPRAGE -rerun RERUN
+# clustersurfManual -subj freesurfer_FS -f "-hippocampal-subfields-T1" -RERUN RERUN
+
+################
+# Subfunctions #
+################
+
+createSubjectLabelFromDICOM()
+{
+SUBJECTS_DIR=$1
+SINGLE_SUBJECT_DICOM_DIR=$2
+PBS_JOBID=$3
+
+
+# This part looks in the scan.dat files to identify the first scan for freesurfer ...
+
+#T1scan=`cat $SINGLE_SUBJECT_DICOM_DIR/scan.dat | grep tfl_mgh_me_adult | awk '{print $8}'`
+
+#T1scan=`cat $SINGLE_SUBJECT_DICOM_DIR/scan.dat | grep tfl_mgh_me_adult | awk '{print $8}'`
+T1scan=`cat $SINGLE_SUBJECT_DICOM_DIR/scan.dat | grep unknown | awk '{print $8}'`
+
+echo "Unpacksdcmdir: T1 scan is: $T1scan" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+#TODO: add additional input for alternative DICOM scan label.
+
+# Auto try for an older scan type... if not successful
+
+if [ -z $T1scan ];then
+
+T1scan=`cat $SINGLE_SUBJECT_DICOM_DIR/scan.dat | grep t1_mprage | grep 160 | awk '{print $8}'`
+echo "Found no RMS scan. Looking for a mprage..."
+echo "File found:$T1scan"
+
+echo "Unpacksdcmdir: No RMS ... T1 scan is: $T1scan" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+fi
+
+# This part pastes it together and sees if the scan exists
+
+T1scanAddress=$SINGLE_SUBJECT_DICOM_DIR/$T1scan
+
+echo "Unpacksdcmdir:Total scan address is: $T1scanAddress" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+if [ -f $T1scanAddress ];
+then
+
+echo "Unpacksdcmdir: Scan found and is located at $T1scanAddress" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+# Get subject name from dicom header
+#`./mnt/lustre/users/splessis/cubic/splessis2/freesurfer/bin/mri_probedicom --i $T1scanAddress | grep PatientName | cut -d' ' -f2`
+
+SUBJECT_DCM_ID=`mri_probedicom --i $T1scanAddress | grep PatientName | cut -d' ' -f2`
+SUBJECT_DCM_DATE=`mri_probedicom --i $T1scanAddress | grep StudyDate | cut -d' ' -f2`
+SUBJECT_DCM_TIME=`mri_probedicom --i $T1scanAddress | grep StudyTime | cut -d' ' -f2 | cut -c1-4`
+SUBJECT_FINAL_ID=$SUBJECT_DCM_DATE'_'$SUBJECT_DCM_TIME'_'$SUBJECT_DCM_ID #TEST${PBS_ARRAY_INDEX} #
+
+echo "---------------------------------------------------------------------------------------------" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Modprobe says:" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo `mri_probedicom` >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "SUBJECT_DCM_ID:$SUBJECT_DCM_ID">> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "SUBJECT_DCM_DATE:$SUBJECT_DCM_DATE">> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "SUBJECT_DCM_DATE:$SUBJECT_DCM_TIME">> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Final ID is: $SUBJECT_FINAL_ID" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+#echo "recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_DCM_ID $FREEFLAG" >> $SUBJECTS_DIR/recon-all-jobs.job
+cat $HOME/bin/CHPC_WORKSHOP_DAY2_clustersurfRunArray.job | head -n7 > $SUBJECTS_DIR/jobFiles/recon-all-jobs${PBS_JOBID}.job
+echo "recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_FINAL_ID $FREESURFER_CMDS" >> $SUBJECTS_DIR/jobFiles/recon-all-jobs${PBS_JOBID}.job
+
+########################################################################################
+# This runs the recon-all for new participant. You can change the flag as you require. #
+########################################################################################
+
+# STore log in subject folder as well as general log...
+
+echo "New subj: `date`: Ran recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_FINAL_ID $FREESURFER_CMDS" >> $SUBJECTS_DIR/$SUBJECT_FINAL_ID/scripts/clustersurf.log
+
+echo " Recon-all: New subj: `date`: Ran recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_FINAL_ID $FREESURFER_CMDS" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+fi
+}
+
+
+createSubjectLabelFromNIFTI()
+{
+
+SUBJECTS_DIR=$1
+SINGLE_SUBJECT_DICOM_DIR=$2
+PBS_JOBID=$3
+
+T1scanAddress=$SINGLE_SUBJECT_DICOM_DIR
+
+SUBJECT_FINAL_ID=`echo $SINGLE_SUBJECT_DICOM_DIR | rev | cut -f1 -d/ | rev | cut -d. -f1`
+
+echo "recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_FINAL_ID $FREESURFER_CMDS" >> $SUBJECTS_DIR/jobFiles/recon-all-jobs${PBS_JOBID}.job
+
+########################################################################################
+# This runs the recon-all for new participant. You can change the flag as you require. #
+########################################################################################
+
+# STore log in subject folder as well as general log...
+
+echo "New subj: `date`: Ran recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_FINAL_ID $FREESURFER_CMDS" #>> $SUBJECTS_DIR/$SUBJECT_FINAL_ID/scripts/clustersurf.log
+
+echo " Recon-all: New subj: `date`: Ran recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_FINAL_ID $FREESURFER_CMDS" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+# Create a jobfile
+
+cat $HOME/clustersurf_bin/clustersurf.job | head -n7 > $SUBJECTS_DIR/jobFiles/recon-all-jobs${PBS_JOBID}.job
+echo "recon-all -i $T1scanAddress -sd $SUBJECTS_DIR -s $SUBJECT_FINAL_ID $FREESURFER_CMDS" >> $SUBJECTS_DIR/jobFiles/recon-all-jobs${PBS_JOBID}.job
+
+
+}
+
+
+#################
+# Manage inputs #
+#################
+
+while [[ $# > 1 ]]
+do
+key="$1"
+
+case $key in
+    -d|--dicomDir|-dicomDir)
+	DICOM_DIR=$(readlink -f "$2")
+	shift
+	;;
+
+    -subj|--subjects_dir|-sd|-target|-targetDir)
+	SUBJECTS_DIR=$(readlink -f "$2")
+	shift
+	;;
+
+    -f|--freesurfer_commands|-flags|-flag|-cmd|-cmds)
+
+	FREESURFER_CMDS=$2
+	shift
+	;;
+
+    -s|--search|-match|-search)
+	
+	SEARCH_STRING=$2
+	shift
+	;;
+    -type|-scanType|--scanType)
+	scanType=$2
+	shift
+	;;
+
+    -RERUN|-rerun)
+	RERUN=$2
+	export CLUSTERSURF_CMD="RERUN"
+	SEARCH_STRING="ls -d $SUBJECTS_DIR/subj*/ | grep -v average | grep -v jobs | grep -v .long. "
+	shift
+	;;
+    *)
+	shift
+	;;
+
+esac
+shift
+done
+
+echo "Rerun is $RERUN"
+
+case $RERUN in
+    
+    step1|step2|tal|skull)
+	export FREESURFER_CMDS="-autorecon2 -autorecon3"
+	;;
+
+    step3)
+	export FREESURFER_CMDS="-autorecon2-cp -autorecon3"
+	;;
+
+    mritotal)
+	export FREESURFER_CMDS="-talairach -use-mritotal -tal-check -clean-tal"
+	;;
+    
+    no-isrunning)
+	export SEARCH_STRING='find $SUBJECTS_DIR -name "IsR*" | rev | cut -d/ -f3- | rev'
+	;;
+
+    *)
+	;;
+
+esac
+
+if [[ -z $SEARCH_STRING ]];
+then
+
+# ID scantype
+
+case $scanType in
+
+    memprage | MEMPRAGE | RMS)
+	export SEARCH_STRING='find $DICOM_DIR -type d -name "*RMS*"'
+	;;
+
+    mprage | MPRAGE)
+	export SEARCH_STRING='find $DICOM_DIR/* -name "*.dcm" -printf "%h\n" | uniq'
+	;;
+
+    IMA)
+	export SEARCH_STRING='find $DICOM_DIR/* -name "*.IMA" -printf "%h\n" | uniq'
+	;;
+
+    nifti | nii | n)
+	export SEARCH_STRING='find $DICOM_DIR/*/*t1_mprage* -name "*.nii" | uniq'
+	;;
+
+    *)
+	;;
+
+esac
+fi
+
+
+# If no optional recon-all commands recevied, use default "-all" flag
+
+if [[ -z $FREESURFER_CMDS ]];
+then
+
+export FREESURFER_CMDS="-all"
+
+fi
+
+# If no search string "-type" flag found, then default to ME-MPRAGES 
+
+if [[ -z $SEARCH_STRING ]];
+then
+
+export SEARCH_STRING='find $DICOM_DIR -type d -name "*RMS*"'
+
+fi
+
+##########################
+# Start of script proper #
+##########################
+
+echo "Backing up old job scripts..."
+
+mv $SUBJECTS_DIR/jobFiles $SUBJECTS_DIR/jobFiles_`date +%y%m%d_%H%M`
+
+# Confirm input
+
+if [[ -z $DICOM_DIR ]];
+then
+
+echo "Need to know what your DICOM source dir is."
+
+exit 1
+
+fi
+
+
+echo "Your DICOM source directory is now: $DICOM_DIR" 
+echo "Your search string is $SEARCH_STRING"
+
+# Create search array that contains the relevant folder names/files for input.
+
+eval $SEARCH_STRING > $HOME/DICOM_DIR_ARRAY.array
+
+arraySize=`cat $HOME/DICOM_DIR_ARRAY.array | wc -l`
+
+
+# Check if subjects found
+
+if [ $arraySize != 0 ]; 
+then
+
+echo "Found $arraySize potential subjects..."
+echo "Using flags $FREESURFER_CMDS"
+
+else
+
+echo "No subjects found! Try a different search string..."
+exit 1
+fi
+
+
+echo "qsub -e $HOME/clustersurf.errout -o $HOME/clustersurf.stdout -J 0-$arraySize $HOME/clustersurf_bin/clustersurf.job"
+
+PBS_ARRAY=`cat $HOME/DICOM_DIR_ARRAY.array | wc -l`
+
+
+# Create output dir
+
+mkdir -p $SUBJECTS_DIR/jobFiles
+
+
+# Loop over each potential subject Raw DICOM scan found.
+
+for PBS_ARRAY_INDEX in $(seq 0 $PBS_ARRAY);do
+
+PBS_JOBID=$PBS_ARRAY_INDEX
+
+# Environment debug for each subject...
+
+echo "---------------------------------------------------------------------------------------------" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "`date` Running clustersurf ..." >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Subjects dir is $SUBJECTS_DIR" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Freesurfer commands are $FREESURFER_CMDS" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Clustersurf cmd is $CLUSTERSURF_CMD" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "---------------------------------------------------------------------------------------------" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+cd $SUBJECTS_DIR
+
+# Create array variable and extract the single subject data
+
+declare -a DICOM_LIST=(`cat $HOME/DICOM_DIR_ARRAY.array`)
+SINGLE_SUBJECT_DICOM_DIR=${DICOM_LIST[${PBS_ARRAY_INDEX}]}
+SINGLE_SUBJECT_DICOM_DIR=$(readlink -f $SINGLE_SUBJECT_DICOM_DIR)
+SUBJECT_ID=`echo $SINGLE_SUBJECT_DICOM_DIR | rev | cut -d/ -f1 | rev`
+
+# Logging single subject data found.
+
+mkdir -p $HOME/clustersurf_logs
+
+echo "---------------------------------------------------------------------------------------------" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Path is $PATH" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "LD_LIBRARY_PATH is $LD_LIBRARY_PATH" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Total ARRAY_SIZE is $ARRAY_SIZE" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "This is sub-job ${PBS_ARRAY_INDEX} of job ${PBS_JOBID} running on ${HOSTNAME} run by ${USER}." >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "clustersurf.job ran on `date`" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "---------------------------------------------------------------------------------------------" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "For folder $SUBJECT_ID: Top DICOM dir is in $DICOM_DIR. SUBJECTS_DIR:$SUBJECTS_DIR " >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Freesurfer flags: $FREESURFER_CMDS" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Clustersurf cmd is $CLUSTERSURF_CMD" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "SINGLE_SUBJECT_DICOM_DIR is $SINGLE_SUBJECT_DICOM_DIR" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "---------------------------------------------------------------------------------------------" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+echo "Clustersurf commands are: $CLUSTERSURF_CMD"
+
+# If no RERUN command found...
+if [[ $scanType == "nifti" ]];then
+
+createSubjectLabelFromNIFTI $SUBJECTS_DIR $SINGLE_SUBJECT_DICOM_DIR $PBS_JOBID
+
+elif [ -z $CLUSTERSURF_CMD ];then
+
+echo "Not a rerun..."
+
+echo "Not a rerun..." >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+##############################
+# Run unpack script here ... #
+##############################
+echo "---------------------------------------------------------------------------------------------" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "Running unpacksdcmdir ..." >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+echo "unpacksdcmdir -scanonly $SINGLE_SUBJECT_DICOM_DIR/scan.dat -src $SINGLE_SUBJECT_DICOM_DIR -targ $SINGLE_SUBJECT_DICOM_DIR" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+if [ -f $SINGLE_SUBJECT_DICOM_DIR/scan.dat ];then
+
+echo "$SINGLE_SUBJECT_DICOM_DIR already unpacked. Skipping!!"
+
+else
+
+unpacksdcmdir -scanonly $SINGLE_SUBJECT_DICOM_DIR/scan.dat -src $SINGLE_SUBJECT_DICOM_DIR -targ $SINGLE_SUBJECT_DICOM_DIR
+
+fi
+
+createSubjectLabelFromDICOM $SUBJECTS_DIR $SINGLE_SUBJECT_DICOM_DIR $PBS_JOBID
+
+elif [[ $CLUSTERSURF_CMD == "RERUN" ]];then
+
+###############################
+# Run scan in subjects folder #
+###############################
+
+    echo "RERUN: Looking into $SUBJECTS_DIR/$SUBJECT_ID/scripts..." >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+    echo "SUBJECTS_DIR is $SUBJECTS_DIR"
+    echo "RERUN: Looking into $SUBJECTS_DIR/$SUBJECT_ID/scripts..."
+    
+    if [ -d $SUBJECTS_DIR/$SUBJECT_ID/scripts ];then
+
+    FILE_SIZE=`du -sm $SUBJECTS_DIR/$SUBJECT_ID | awk '{print $1}'`
+
+    #if [[ "$FILE_SIZE" -lt  "200" && -d $SUBJECTS_DIR/$SUBJECT_ID/scripts ]];then
+    #if [[ ! -f $SUBJECTS_DIR/$SUBJECT_ID/stats/rh.aparc.DKTatlas.stats ]];then
+
+	echo "File size is `du -sm $SUBJECTS_DIR/$SUBJECT_ID`"
+
+	echo "RERUN: `date`: Starting recon-all -sd $SUBJECTS_DIR -s $SUBJECT_ID $FREESURFER_CMDS" >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+  
+	cat $HOME/bin/CHPC_WORKSHOP_DAY2_clustersurfRunArray.job | head -n7 > $SUBJECTS_DIR/jobFiles/recon-all-jobsRERUN${PBS_JOBID}.job
+	echo "recon-all -sd $SUBJECTS_DIR -s $SUBJECT_ID $FREESURFER_CMDS" >> $SUBJECTS_DIR/jobFiles/recon-all-jobsRERUN${PBS_JOBID}.job
+    
+#    else
+	
+#	echo "SUBJECT_ID - $SUBJECT_ID: Seems done. Moving on"
+
+#    fi
+# Save in individual log...
+
+    else
+
+    echo "SUBJECT_ID - $SUBJECT_ID: Does not seem to be a freesurfer directory... moving on..."
+    echo "RERUN: SUBJECT_ID - $SUBJECT_ID: Does not seem to be a freesurfer directory... moving on..." >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+    fi
+
+
+else
+
+echo "No T1 found and no RERUN command issued."
+echo "RERUN: No T1 found and no RERUN command issued." >> $HOME/clustersurf_logs/clustersurf.${PBS_JOBID}.debug
+
+#recon-all -sd $SUBJECTS_DIR -s $SUBJECT_ID $FREESURFER_CMDS
+#echo "`date`: Ran recon-all -sd $SUBJECTS_DIR -s $SUBJECT_ID $FREESURFER_CMDS" >> $SUBJECTS_DIR/$SUBJECT_ID/scripts/clustersurf.log #>> $SUBJECTS_DIR/$SUBJECT_FINAL_ID/scripts/clustersurf.log
+
+fi
+
+done

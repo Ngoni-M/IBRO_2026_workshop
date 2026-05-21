@@ -1,0 +1,25 @@
+#! /bin/bash
+
+ARRAY_FILE=$HOME/commandsForPBS.array
+rm $ARRAY_FILE
+
+SUBJECTS_DIR=$(readlink -f $1)
+
+jobfileList=`ls $SUBJECTS_DIR/jobFiles/*.job`
+
+#echo "jobfileList is $jobfileList"
+
+for jobfile in $jobfileList
+do
+
+echo "Reviewing jobfile $jobfile..."
+
+#echo `cat $jobfile | tail -n1`
+echo "Creating array..."
+cat $jobfile | tail -n1 >> $ARRAY_FILE
+
+done
+
+arraySize=`echo "$jobfileList" | wc -l`
+echo "qsub -e $HOME/clustersurfRunArray.errout -o $HOME/clustersurfRunArray.stdout -J 1-$arraySize $HOME/bin/CHPC_WORKSHOP_DAY2_clustersurfRunArray.job"
+qsub -v ARRAY_FILE=${ARRAY_FILE} -e $HOME/clustersurfRunArray.errout -o $HOME/clustersurfRunArray.stdout -J 0-$arraySize $HOME/bin/CHPC_WORKSHOP_DAY2_clustersurfRunArray.job
