@@ -22,8 +22,9 @@ After restarting, open **Ubuntu** from the Start Menu.
 
 Ubuntu will ask you to create a Linux username and password.
 
-> <span style="color: red;"><strong>HUGE NB: Pay attention when you setup your WSL username and password.</strong></span>
->
+## Username Setup
+<span style="color: red;"><strong>HUGE NB: Pay attention when you setup your WSL username and password.</strong></span> 
+
 > This is not your normal Windows username and password. This is a new Ubuntu username and password.
 > This will have a huge impact on the ease of use of WSL/terminal
 >
