@@ -200,7 +200,7 @@ rsync
 
 No other extra Cygwin packages are needed at this point. If you get stuck during installation, read the instructions on the Cygwin landing page first, because they explain the installer steps and common setup choices.
 
-## Worst case scenario if you cant get a terminal working on Windows:
+## Plan C: Worst case scenario if you cant get a terminal working on Windows:
 This can be a really easy experience or somewhat harrowing. You can still follow along or work with a friend on the workshop day. Just give it your best shot.
 
 ---
