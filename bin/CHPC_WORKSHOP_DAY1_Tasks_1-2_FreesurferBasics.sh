@@ -4,13 +4,14 @@
 #  
 #
 #  Created by Stéfan du Plessis on 2018/11/20.
+#  Updated on 2026/05/21
 #  
 
 ##############################################
 # Task 1.1: Now you are ready for Big Dragon #
 ##############################################
 
-# Now use your hard earned skills to install freesurfer!
+# Now use your hard earned skills to load freesurfer and prepare a subjects folder!
 
 # 1. Login to CHPC like so:
 
@@ -28,16 +29,22 @@ emacs ~/.bash_profile
 . .bash_profile
 interactiveJob
 
-# 3. Copy the Freesurfer tar-ball located in: /mnt/lustre/users/splessis/cubic/splessis2/freesurferTar
-#    to your scratch folder: /mnt/lustre/users/<yourusername> e.g. /mnt/lustre/users/splessis/
+# 3. The example .bash_profile now loads Freesurfer using the CHPC module system.
+#    Check that your .bash_profile contains the relevant module lines, especially:
 
-cp -vr /mnt/lustre/users/splessis/cubic/splessis2/freesurferTar/* /mnt/lustre/users/$USER/
+module add chpc/BIOMODULES
+module add freesurfer/8.0.0-1
 
-# 4. Untar the tarball (See above example), and add freesurfer to your PATH. Check the example .bash_profile included in the course notes, for an example.
+# 4. Make a new subjects folder on your Lustre space, then bind Freesurfer to it
+#    by setting SUBJECTS_DIR in your .bash_profile.
+
+mkdir -p /mnt/lustre/users/$USER/freesurfer/subjects
+export SUBJECTS_DIR=/mnt/lustre/users/$USER/freesurfer/subjects
 
 # 5. Copy the example data over... (NB: Be sure you are using an interactive job!)
 
 cd /mnt/lustre/users/$USER/
+cp -vr /mnt/lustre/users/splessis/cubic/splessis2/ExampleSubjects $SUBJECTS_DIR/
 
 # While it is copying, you can open a new terminal so long.
 
@@ -58,11 +65,8 @@ echo $FREESURFER_HOME
 cd $SUBJECTS_DIR
 pwd
 
-# To activate Freesurfer, run the following command:
-
-cp /mnt/lustre/users/splessis/cubic/splessis2/freesurfer6/license.txt $FREESURFER_HOME/
-
-# Better yet, apply for one on their website: its quick n easy.
+# The module should provide the Freesurfer installation and license.
+# If recon-all complains about a missing license, ask an instructor before continuing.
 
 ###########################################################
 # Task 1.2 - Running a single subject on the command-line #
@@ -83,16 +87,28 @@ cp /mnt/lustre/users/splessis/cubic/splessis2/freesurfer6/license.txt $FREESURFE
 
 ssh <yourusername>@lengau.chpc.ac.za # If you arent already logged in.
 cd $SUBJECTS_DIR
-interactive_job # If this is not working, check your interactive job alias, in your .bash_profile again.
+interactiveJob # If this is not working, check your interactive job alias, in your .bash_profile again.
 
-cd /mnt/lustre/users/$USER/freesurfer/subjects/ExampleSubjects/Subject1/subject_RMS/
+cd $SUBJECTS_DIR/ExampleSubjects/20101109_1743_Stefan_QC_test_single_channel/3_tfl_mgh_me_adult_RMS/
 
-recon-all -i anon1.dcm -s SUBJECT1 -all -hippocampal-subfields-T1
+# First, look at the DICOM files in this folder:
+
+ls *.dcm | head
+
+# The filenames are long monstrosities on purpose!
+# MR means this is an MR image. The long number is a DICOM UID: a unique
+# identifier written by the scanner/software so each image can be tracked
+# without relying on a friendly name.
+# You do not need to type the whole thing by hand. We can ask the shell to
+# choose the first DICOM file for us:
+
+FIRST_DICOM_FILE=`ls *.dcm | head -n1`
+recon-all -i $FIRST_DICOM_FILE -s SUBJECT1 -all -hippocampal-subfields-T1
 
 # Press <control-c> after a few minutes.
 # Now check what it does:
 
-recon-all -i anon1.dcm -s SUBJECT1 -all -hippocampal-subfields-T1
+recon-all -i $FIRST_DICOM_FILE -s SUBJECT1 -all -hippocampal-subfields-T1
 
 # Now do this:
 recon-all -s SUBJECT1 -all -hippocampal-subfields-T1 -no-isrunning
