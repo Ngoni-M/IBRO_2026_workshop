@@ -131,7 +131,7 @@ It should say:
 Enabled
 ```
 
-If it says **Disabled**, the setting may need to be changed in BIOS/UEFI. This may require help from IT.
+If it says **Disabled**, the setting may need to be changed in BIOS/UEFI. This may require help from us if you are not familiar with this procedure.
 
 ---
 
@@ -167,7 +167,7 @@ Then restart your computer.
 
 ## Workshop advice
 
-Please install WSL **before the workshop**.
+Please try your best to install WSL **before the workshop**.
 
 Installation can be delayed by:
 
@@ -199,6 +199,9 @@ rsync
 7. Open the **Cygwin Terminal** from the Start menu and use that terminal for workshop commands if WSL is not working.
 
 No other extra Cygwin packages are needed at this point. If you get stuck during installation, read the instructions on the Cygwin landing page first, because they explain the installer steps and common setup choices.
+
+## Worst case scenario if you cant get a terminal working on Windows:
+This can be a really easy experience or somewhat harrowing. You can still follow along or work with a friend on the workshop day. Just give it your best shot.
 
 ---
 
