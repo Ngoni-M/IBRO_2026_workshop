@@ -15,6 +15,16 @@ if [ -f ~/.bashrc ]; then
 fi
 
 # Lets customize our PROMPT!!
+# PS1 controls what your shell prompt looks like.
+# \[\e[0;31m\] starts red text. The \[ and \] tell bash that the colour code
+# does not take up visible space, which helps long commands wrap correctly.
+# [\u@\h \W] shows [username@hostname current_directory].
+# \$ shows "$" for a normal user and "#" for root.
+# \[\e[m\] resets the colour back to the terminal default.
+
+# This is useful to do, as it keeps you orientated which machine you are working on.
+
+export PS1="\[\e[0;31m\][\u@\h \W]\$ \[\e[m\]"
 
 # Very useful: Setting up an interactive job alias
 
@@ -29,8 +39,13 @@ alias interactiveJob="qsub -I -P HEAL0793 -q serial -l walltime=48:00:00"
 module add chpc/R/3.3.2-gcc6.2.0
 
 # User specific environment and startup programs
+
+# NB: The order here is often important. Often you need to first add the BIOMODULES for example.
+
 module add chpc/BIOMODULES
 module add afni/18.1.09
+module add fsl/6.0.4
+module add freesurfer/8.0.0-1
 
 #Install freesurfer (Note you need to provide your information here.)
 
@@ -64,5 +79,4 @@ FSLDIR=/mnt/lustre/users/splessis/cubic/splessis2/fsl
 PATH=${FSLDIR}/bin:${PATH}
 . ${FSLDIR}/etc/fslconf/fsl.sh
 export FSLDIR PATH
-
 

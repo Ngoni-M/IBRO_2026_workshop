@@ -1,3 +1,11 @@
+# IBRO 2026 Workshop
+
+Welcome to the IBRO 2026 Workshop. These are the principles we will follow throughout the workshop:
+
+![IBRO 2026 Workshop Principles](IBRO%202026%20Workshop%20Principles.png)
+
+---
+
 # Installing WSL and VSCODE for the Workshop
 
 This guide is for **Windows users** who need to install WSL before the workshop.
