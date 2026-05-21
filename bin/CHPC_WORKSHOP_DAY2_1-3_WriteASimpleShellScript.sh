@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# This lesson is intended for more advanced students who want to learn how
+# to write the helper scripts used in the workshop, or at least understand
+# the basic pattern we have been using.
+#
+# Beginners can skip ahead and use the finished script directly:
+# CHPC_WORKSHOP_DAY2_prepareReconAllJobs
+
 #########################################
 # Task 2.1: Write a simple Shell script #
 #########################################
@@ -189,7 +196,6 @@ CHPC_WORKSHOP_DAY2_submitReconAllJobs ExampleSubjectsFreeSurfer_Output
 qstat | grep $USER
 
 # The full recon-all command will likely take a few hours.
-
 
 
 
