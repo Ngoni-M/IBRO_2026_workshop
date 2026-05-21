@@ -6,6 +6,10 @@ Welcome to the IBRO 2026 Workshop. These are the principles we will follow throu
 
 ---
 
+# BEFORE THE WORKSHOP
+
+---
+
 # Installing WSL and VSCODE for the Workshop
 
 This guide is for **Windows users** who need to install WSL before the workshop.
@@ -214,7 +218,7 @@ The **WSL** extension lets VS Code connect to Ubuntu.
 
 ---
 
-### 2. Make a Shell profile
+### 2. Make a Shell profile (OPTIONAL but nice to have!)
 
 VS Code profiles let you keep workshop settings separate from your normal VS Code setup.
 
@@ -268,8 +272,6 @@ Shell
 
 The important idea is to use `vscode_examples/Shell.code-profile` as a starting point for a workshop-friendly shell setup, then adjust it before relying on it.
 
----
-
 ### 3. Connect VS Code to Ubuntu
 
 In VS Code, click the green or blue button in the bottom-left corner.
@@ -295,10 +297,70 @@ WSL: Ubuntu
 ```
 
 This means VS Code is using Ubuntu as the main environment.
+---
+### 4. Getting the code from github
+
+For now, keep the workshop code in your Ubuntu home folder. This matters because it keeps the paths simple and makes it much easier to follow the workshop instructions.
+
+Your Ubuntu home folder usually looks like this:
+
+```text
+/home/your-username
+```
+
+For example:
+
+```text
+/home/stefan
+```
+
+#### Simplest option: download the ZIP file
+
+1. Go to the GitHub page:
+
+```text
+https://github.com/stefandup/IBRO_2026_workshop
+```
+
+2. Click the green **Code** button.
+3. Click **Download ZIP**.
+4. Move the ZIP file into your Ubuntu home folder.
+5. Unzip it there.
+
+After unzipping, check from the command line that the folder is in your home folder:
+
+```bash
+cd ~/IBRO_2026_workshop
+pwd
+ls
+```
+
+`pwd` should show your Ubuntu home folder, and `ls` should show the unzipped workshop folder. Make sure it is not in a nested folder, else you will make this harder for yourself.
+
+#### Better option: use git clone
+
+If you have `git` available, this is cleaner:
+
+```bash
+cd ~
+git clone https://github.com/stefandup/IBRO_2026_workshop.git
+```
+
+Check that it worked:
+
+```bash
+pwd
+ls
+ls IBRO_2026_workshop
+```
+
+You should see the workshop repository inside your Ubuntu home folder.
+
+After this, open the workshop folder in VS Code using the next section.
 
 ---
 
-### 4. Open a folder in Ubuntu
+### 5. Open a folder in Ubuntu
 
 In VS Code, click:
 
@@ -340,7 +402,7 @@ A **VS Code workspace** is simply the folder you have opened in VS Code. It tell
 
 ---
 
-### 5. Pin VS Code to the taskbar
+### 6. Pin VS Code to the taskbar (OPTIONAL but nice!)
 
 It can be helpful to pin VS Code to the Windows taskbar.
 
@@ -359,3 +421,42 @@ This makes it easier to open VS Code again during the workshop.
 This repository includes an `AGENTS.md` file. It gives AI coding assistants instructions for this workshop: keep answers short, teach one step at a time, ask before changing files or suggesting commands, and use shell-focused examples.
 
 The goal is to help you learn by doing. Without instructions like these, an AI assistant may solve the whole task for you before you have had a chance to practise.
+
+---
+
+# THIS CAN BE DONE DURING THE WORKSHOP
+
+---
+
+## How to generate dummy data for use in the workshop
+
+The dummy DICOM data is generated locally because the copied scan folder is too large for GitHub. The source example scan is based on my own brain data, and I give permission for it to be used for this workshop.
+
+Create and activate a Python virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Your terminal should display something like this, to show that your virtual environment is active.:
+
+```bash
+(.venv) yourUsername:ThisFolder$ 
+```
+
+Install the Python package needed to edit DICOM headers:
+
+```bash
+pip install pydicom
+```
+
+Generate the dummy subject folder while you are in the workspace folder:
+
+```bash
+python helper_scripts/make_dummy_dicom_subjects.py
+```
+
+This creates `dummy_data/` with 10 copied subjects named `subject1`, `subject2`, and so on. The generated folder is ignored by Git.
+
+---
