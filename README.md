@@ -23,24 +23,25 @@ After restarting, open **Ubuntu** from the Start Menu.
 Ubuntu will ask you to create a Linux username and password.
 
 ## Username Setup
-<span style="color: red;"><strong>HUGE NB: Pay attention when you setup your WSL username and password.</strong></span> 
+<span style="color: red;"><strong>HUGE NB: Pay attention when you setup your WSL username and password !!!</strong></span> 
 
-> This is not your normal Windows username and password. This is a new Ubuntu username and password.
-> This will have a huge impact on the ease of use of WSL/terminal
->
-> Use a username that is simple and easy to type. Use only lowercase letters. For example:
->
+This is not your normal Windows username and password. This is a new Ubuntu username and password.
+
+This will have a huge impact on the ease of use of WSL/terminal
+
+Use a username that is simple and easy to type. Use only lowercase letters. For example:
+
 > ```text
 > stefan
 > ```
->
-> <span style="color: red;"><strong>Do not use spaces, capital letters, or special characters in the username.</strong></span>
->
-> Use a password you will remember. For this workshop, avoid special characters in the password. Use letters and numbers only.
->
-> You will not see anything on screen while typing the password. This is normal. Type the password and press Enter.
->
-> Ubuntu may ask you to type the same password again. Type the same password again and press Enter.
+
+<span style="color: red;"><strong>Do not use spaces, capital letters, or special characters in the username.</strong></span>
+
+Use a password you will remember. For this workshop, avoid special characters in the password. Use letters and numbers only.
+
+You will not see anything on screen while typing the password. This is normal. Type the password and press Enter.
+
+Ubuntu may ask you to type the same password again. Type the same password again and press Enter.
 
 ---
 
