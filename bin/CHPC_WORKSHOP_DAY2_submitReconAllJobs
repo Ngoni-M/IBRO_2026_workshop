@@ -1,0 +1,50 @@
+#! /bin/bash
+
+# Submit the job files prepared by CHPC_WORKSHOP_DAY2_prepareReconAllJobs.
+#
+# Example:
+#   CHPC_WORKSHOP_DAY2_submitReconAllJobs /path/to/freesurfer_subjects
+
+set -u
+
+show_usage()
+{
+    echo "Usage:"
+    echo "  $0 <subjects_dir>"
+    echo
+    echo "Example:"
+    echo "  CHPC_WORKSHOP_DAY2_submitReconAllJobs /path/to/freesurfer_subjects"
+}
+
+if [ "$#" -ne 1 ]; then
+    show_usage
+    exit 1
+fi
+
+SUBJECTS_DIR=$(readlink -f "$1")
+JOB_DIR="$SUBJECTS_DIR/jobFiles"
+
+if [ ! -d "$SUBJECTS_DIR" ]; then
+    echo "Subjects directory does not exist: $SUBJECTS_DIR" >&2
+    exit 1
+fi
+
+if [ ! -d "$JOB_DIR" ]; then
+    echo "No jobFiles directory found in: $SUBJECTS_DIR" >&2
+    echo "Run CHPC_WORKSHOP_DAY2_prepareReconAllJobs first." >&2
+    exit 1
+fi
+
+shopt -s nullglob
+JOB_FILES=("$JOB_DIR"/*.job)
+shopt -u nullglob
+
+if [ "${#JOB_FILES[@]}" -eq 0 ]; then
+    echo "No .job files found in: $JOB_DIR" >&2
+    exit 1
+fi
+
+for JOB_FILE in "${JOB_FILES[@]}"; do
+    qsub "$JOB_FILE"
+    echo "Submitted job file: $JOB_FILE"
+done

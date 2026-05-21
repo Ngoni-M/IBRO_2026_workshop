@@ -66,7 +66,7 @@ def main():
         print(f"Created {target_scanfolder}")
 
     print()
-    print("Use this folder with CHPC_WORKSHOP_DAY2_clustersurfManual2:")
+    print("Use this folder with CHPC_WORKSHOP_DAY2_prepareReconAllJobs:")
     print(f"  {OUTPUT_PARENT}")
 
 

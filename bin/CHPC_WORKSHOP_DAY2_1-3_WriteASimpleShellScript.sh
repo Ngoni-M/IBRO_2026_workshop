@@ -1,17 +1,22 @@
-#!/bin/sh
+#!/bin/bash
 
 #########################################
 # Task 2.1: Write a simple Shell script #
 #########################################
 
-# The sample data you will be using is located at:
-# /mnt/lustre/users/splessis/cubic/splessis2/ExampleSubjects
+# First create the dummy DICOM data in your workshop workspace folder.
+# Do this from the IBRO_2026_Workshop folder:
 
-#
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pydicom
+python helper_scripts/make_dummy_dicom_subjects.py
 
-# First copy it over to your subjects directory (If you havent done so already):
+# This creates dummy_data/ with 10 copied subjects named subject1, subject2, and so on.
+# Now copy dummy_data/ to your FreeSurfer subjects directory for the rest of this task:
 
-cp -vr /mnt/lustre/users/splessis/cubic/splessis2/ExampleSubjects $SUBJECTS_DIR
+mkdir -p $SUBJECTS_DIR/ExampleSubjects
+rsync -av dummy_data/ $SUBJECTS_DIR/ExampleSubjects/
 
 # Now create a new script
 
@@ -40,7 +45,9 @@ echo "Subject $counter is $SUBJECT."
 
 done
 
-# Then, when you think it works, expand on it like this:
+# Then, when you think it works, expand on it like this.
+# This version does not make one long command list.
+# Instead, it writes one CHPC job file for each subject.
 
 ##############
 
@@ -48,8 +55,9 @@ done
 
 DICOM_DIR=/mnt/lustre/users/$USER/freesurfer/subjects/ExampleSubjects
 SUBJECTS_DIR=/mnt/lustre/users/$USER/freesurfer/subjects/ExampleSubjects_output
+JOB_DIR=$SUBJECTS_DIR/jobFiles
 
-mkdir $SUBJECTS_DIR
+mkdir -p $JOB_DIR
 
 cd $DICOM_DIR
 
@@ -57,7 +65,6 @@ cd $DICOM_DIR
 
 SUBJECTS_LIST=`ls -d Subject*`
 counter=0
-rm -f $HOME/MyAmazingArray
 
 for SUBJECT in $SUBJECTS_LIST
 do
@@ -72,10 +79,22 @@ echo "SINGLE_SUBJECTS_DIR is $SINGLE_SUBJECTS_DIR"
 FIRST_DICOM_FILE=`ls $SINGLE_SUBJECTS_DIR/*.dcm | head -n1`
 
 # Not really the first dcm, but hey, it will work for now...
-# Now we create a text file, where each line is a recon-all command for an individual subject.
+# Now we create a job file for this subject.
+# Each job file contains the CHPC instructions and one recon-all command.
 
-echo "recon-all -i $FIRST_DICOM_FILE -s $SUBJECT -sd $SUBJECTS_DIR -motioncor -nuintensitycor"
-echo "recon-all -i $FIRST_DICOM_FILE -s $SUBJECT -sd $SUBJECTS_DIR -motioncor -nuintensitycor" >> $HOME/MyAmazingArray
+JOB_FILE=$JOB_DIR/recon-all-$SUBJECT.job
+
+echo "#! /bin/bash" > $JOB_FILE
+echo "" >> $JOB_FILE
+echo "#PBS -l select=2:ncpus=24" >> $JOB_FILE
+echo "#PBS -l walltime=48:00:00" >> $JOB_FILE
+echo "#PBS -P WCHPC" >> $JOB_FILE
+echo "#PBS -N recon-all-$SUBJECT" >> $JOB_FILE
+echo "#PBS -q normal" >> $JOB_FILE
+echo "" >> $JOB_FILE
+echo "recon-all -i $FIRST_DICOM_FILE -s $SUBJECT -sd $SUBJECTS_DIR -motioncor -nuintensitycor" >> $JOB_FILE
+
+echo "Created job file: $JOB_FILE"
 
 # Note the flags "-motioncor -nuintensitycor" are just the preliminary steps.
 
@@ -84,93 +103,41 @@ done
 #############
 
 
-# Now check out your array you made:
+# Now check out the job files you made:
 
-cat $HOME/MyAmazingArray
+ls $JOB_DIR
+cat $JOB_DIR/*.job
 
-############################################################################
-# Task 2.2 convert your Shell script to a Job script and submit it to CHPC #
-############################################################################
+############################################################
+# Task 2.2 submit the job files you created to CHPC        #
+############################################################
 
-# We can now use it in a jobscript to send it to individual nodes:
+# The job files are ready to send to CHPC.
+# You can submit one job file by hand like this:
 
-# Now we will convert our Shell script to a jobfile, just to show you they are essentially the same. Lets call it myJobFile.job
+qsub $JOB_DIR/recon-all-Subject1.job
 
-cp $HOME/bin/MyExampleShellScript $HOME/myJobFile.job
+# Check what it is doing:
 
-emacs $HOME/myJobFile.job
+qstat | grep $USER
 
-#Include the following at the job of the file:
+# To submit all the job files, use a small loop.
+# This is the same basic pattern used by CHPC_WORKSHOP_DAY2_submitReconAllJobs.
 
 ##########
 
 #! /bin/bash
 
-#PBS -l select=2:ncpus=24
-#PBS -l walltime=48:00:00
-#PBS -P WCHPC
-#PBS -N MyAmazingRunArray
-#PBS -q normal
+SUBJECTS_DIR=/mnt/lustre/users/$USER/freesurfer/subjects/ExampleSubjects_output
+JOB_DIR=$SUBJECTS_DIR/jobFiles
 
-######
-
-# Remove your old arrayfile:
-
-rm $HOME/MyAmazingArray
-
-# And run it using qsub:
-
-qsub $HOME/myJobFile.job
-
-# Check what it is doing:
-
-qsub | grep $USER
-
-# When it is done, do the following:
-
-cat $HOME/MyAmazingArray
-
-# Now lets make a jobfile that runs each of the lines in the array you made on an available Node:
-
-emacs $HOME/myArrayJobFile.job
-
-# Add this:
+for JOB_FILE in $JOB_DIR/*.job
+do
+    qsub $JOB_FILE
+    echo "Submitted job file: $JOB_FILE"
+done
 
 ############
-
-#! /bin/bash
-
-#PBS -l select=2:ncpus=24
-#PBS -l walltime=48:00:00
-#PBS -P WCHPC
-#PBS -N MyAmazingRunArray
-#PBS -q normal
-
-# This pulls out the line number that corresponds with the subject ...
-
-SINGLE_SUBJECT_COMMAND=`sed -n "${PBS_ARRAY_INDEX} p" $ARRAY_FILE`
-
-# Note ${PBS_ARRAY_INDEX} is an environment variable, which you didnt need to create. Its part of the scheduler.
-
-# eval is a program that turns a text string into a command:
-
-eval $SINGLE_SUBJECT_COMMAND
-echo "eval $SINGLE_SUBJECT_COMMAND"
-
-############
-
-# Now run it like this:
-
-ARRAY_FILE=$HOME/MyAmazingArray
-arraySize=`cat $ARRAY_FILE | wc -l`
-
-# Check with an echo what you are doing:
-
-echo "qsub -v ARRAY_FILE=${ARRAY_FILE} -e $HOME/clustersurfRunArray.errout -o $HOME/clustersurfRunArray.stdout -J 0-$arraySize $HOME/myJobFile.job"
-
-# Run it ... this will send your script to the queue. Each subject will run on the first available node.
-
-qsub -v ARRAY_FILE=${ARRAY_FILE} -e $HOME/clustersurfRunArray.errout -o $HOME/clustersurfRunArray.stdout -J 0-$arraySize $HOME/myArrayJobFile.job
 
 # While it is running, you can do the following checks:
 
@@ -192,55 +159,36 @@ cat Subject1/scripts/recon-all.log # You can view one log file at a time. Hint: 
 ls */scripts/recon-all.done # This will show who completed.
 ls */scripts/recon-all.error # These ones finished with an error.
 
-cat clustersurfRunArray.stdout # This is the output each node made. Useful, when writing new jobscripts.
-cat clustersurfRunArray.errout # This is also useful to check, as it may have errors in it.
-
-##########################################################
-# Task 2.3 Use Clustersurf to Submit 10 example subjects #
-##########################################################
+#############################################################
+# Task 2.3 Use FreeSurfer Jobs to Submit 10 example subjects #
+#############################################################
 
 # Now we will use one of our scripts to run all 10 subjects. It works on the same principles we just covered:
 
-# 1.) You have one script that creates individual jobfiles.
-# 2.) Another that runs them as an array.
+# 1.) You have one script that creates individual job files.
+# 2.) Another script submits each job file with qsub.
 
 SUBJECTS_DIR=/mnt/lustre/users/$USER/freesurfer/subjects
 cd $SUBJECTS_DIR
-mkdir ExampleSubjectsClustersurf_Output/ # Lets create a subfolder in our subjects dir to organize things.
+mkdir -p ExampleSubjectsFreeSurfer_Output/ # Lets create a subfolder in our subjects dir to organize things.
 
-# Creates the jobfiles:
-CHPC_WORKSHOP_DAY2_clustersurfManual2 -flags "-motioncor -nuintensitycor" -subj ExampleSubjectsClustersurf_Output/ -d ExampleSubjects
+# Creates the job files:
+CHPC_WORKSHOP_DAY2_prepareReconAllJobs -d ExampleSubjects -sd ExampleSubjectsFreeSurfer_Output/
 
-ls ExampleSubjectsClustersurf_Output/jobFiles/
-cat ExampleSubjectsClustersurf_Output/jobFiles/recon-all-jobs*
+# Check the job files before you submit them:
 
-# Now submit your array with the second script:
+ls ExampleSubjectsFreeSurfer_Output/jobFiles/
+cat ExampleSubjectsFreeSurfer_Output/jobFiles/*.job
 
-CHPC_WORKSHOP_DAY2_clustersurfRunArray ExampleSubjectsClustersurf_Output
+# Now submit your jobs with the second script:
 
-# Check for output:
+CHPC_WORKSHOP_DAY2_submitReconAllJobs ExampleSubjectsFreeSurfer_Output
 
-qsub | grep $USER
-ls ExampleSubjectsClustersurf_Output/
+# Check what is in the queue:
 
-# If that works, erase all the output, and setup the entire freesurfer pipeline like this:
-CHPC_WORKSHOP_DAY2_clustersurfManual2 -flags "-all" -subj ExampleSubjectsClustersurf_Output/ -d ExampleSubjects
-
-# Check what you have done...
-ls ExampleSubjectsClustersurf_Output
-ls ExampleSubjectsClustersurf_Output/jobFiles
-cat ExampleSubjectsClustersurf_Output/jobFiles/*.job
-
-# And run:
-
-CHPC_WORKSHOP_DAY2_clustersurfRunArray ExampleSubjectsClustersurf_Output
-
-# And check on it. Will likely take 4 hours.
 qstat | grep $USER
 
-
-
-
+# The full recon-all command will likely take a few hours.
 
 
 

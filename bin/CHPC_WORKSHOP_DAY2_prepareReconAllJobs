@@ -11,13 +11,11 @@
 #     recon-all       - runs the FreeSurfer reconstruction
 #
 # Example:
-#   CHPC_WORKSHOP_DAY2_clustersurfManual2 \
+#   CHPC_WORKSHOP_DAY2_prepareReconAllJobs \
 #     -d /path/to/all_participant_dicoms \
 #     -sd /path/to/freesurfer_subjects
 
 set -u
-
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 show_usage()
 {
@@ -28,7 +26,7 @@ show_usage()
     echo "  $0 -d <dicom_parent_dir> -sd <subjects_dir>"
     echo
     echo "Example:"
-    echo "  CHPC_WORKSHOP_DAY2_clustersurfManual2 \\"
+    echo "  CHPC_WORKSHOP_DAY2_prepareReconAllJobs \\"
     echo "    -d /path/to/all_participant_dicoms \\"
     echo "    -sd /path/to/freesurfer_subjects"
 }
@@ -103,10 +101,17 @@ write_recon_all_job()
 
     mkdir -p "$subjects_dir/jobFiles"
 
-    # Keep the same CHPC job header used elsewhere in the workshop.
-    head -n 7 "$SCRIPT_DIR/CHPC_WORKSHOP_DAY2_clustersurfRunArray.job" > "$job_file"
-
-    echo "recon-all -i \"$t1_dicom\" -sd \"$subjects_dir\" -s \"$subject_label\" -all" >> "$job_file"
+    {
+        echo "#! /bin/bash"
+        echo
+        echo "#PBS -l select=2:ncpus=24"
+        echo "#PBS -l walltime=48:00:00"
+        echo "#PBS -N recon-all-${subject_label}"
+        echo "#PBS -P WCHPC"
+        echo "#PBS -q normal"
+        echo
+        echo "recon-all -i \"$t1_dicom\" -sd \"$subjects_dir\" -s \"$subject_label\" -all"
+    } > "$job_file"
 
     echo "Prepared job file:"
     echo "  $job_file"
