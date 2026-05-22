@@ -55,6 +55,9 @@ echo "bash_profile: FREESURFER_HOME is now $FREESURFER_HOME..." # Double check t
 source $FREESURFER_HOME/SetUpFreeSurfer.sh
 export PATH
 
+# Set this to point to your license file.
+FS_LICENSE=
+
 # Add symlinks to LD_LIBRARY path: This is for code that freesurfer depends on. Make sure you copy libGLU over, and that you have read permissions.
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/lustre/users/splessis/cubic/libGLU

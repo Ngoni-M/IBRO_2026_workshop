@@ -38,17 +38,47 @@ module add freesurfer/8.0.0-1
 # 4. Make a new subjects folder on your Lustre space, then bind Freesurfer to it
 #    by setting SUBJECTS_DIR in your .bash_profile.
 
-mkdir -p /mnt/lustre/users/$USER/freesurfer/subjects
-export SUBJECTS_DIR=/mnt/lustre/users/$USER/freesurfer/subjects
+# First make sure there is a subjects dir
 
-# 5. Copy the example data over... (NB: Be sure you are using an interactive job!)
+mkdir -p /mnt/lustre/users/$USER/subjects
+
+# Then add to your .bash_profile
+
+export SUBJECTS_DIR=/mnt/lustre/users/$USER/subjects
+
+# 5. Create the dummy DICOM data locally first.
+#
+#    Do this on your own computer, from inside the workshop repository folder.
+#    The helper script creates a dummy_data/ folder that looks like this:
+#
+#    dummy_data/
+#      subject1/
+#      subject2/
+#      ...
+#      subject10/
+
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install pydicom
+
+python3 helper_scripts/make_dummy_dicom_subjects.py
+
+# 6. Copy the locally-created dummy_data folder to your CHPC Lustre space.
+#
+#    Use the same CHPC account you are using for the workshop. This may be your
+#    usual CHPC account or a temporary workshop account.
+#
+#    Run this from your own computer, from inside the workshop repository folder:
+
+scp -r dummy_data <yourusername>@lengau.chpc.ac.za:/mnt/lustre/users/<yourusername>/
+
+# 7. Back on CHPC, check that the dummy data arrived.
 
 cd /mnt/lustre/users/$USER/
-cp -vr /mnt/lustre/users/splessis/cubic/splessis2/ExampleSubjects $SUBJECTS_DIR/
+ls dummy_data
 
-# While it is copying, you can open a new terminal so long.
-
-# 6. Freesurfer has one basic command. recon-all. It also works like the other unix commands.
+# 8. Freesurfer has one basic command. recon-all. It also works like the other unix commands.
 # See if it works...
 
 recon-all
@@ -89,7 +119,7 @@ ssh <yourusername>@lengau.chpc.ac.za # If you arent already logged in.
 cd $SUBJECTS_DIR
 interactiveJob # If this is not working, check your interactive job alias, in your .bash_profile again.
 
-cd $SUBJECTS_DIR/ExampleSubjects/20101109_1743_Stefan_QC_test_single_channel/3_tfl_mgh_me_adult_RMS/
+cd /mnt/lustre/users/$USER/dummy_data/subject1/*RMS*/
 
 # First, look at the DICOM files in this folder:
 
