@@ -42,10 +42,15 @@ TARGET_SEQUENCE_DIR_PATTERN="*RMS*"
 #   StudyTime
 #
 # These two settings say which DICOM field we treat as the sequence name, and
-# which text we expect to find in that field.  If your sequence is named
-# "t1_mprage", "MPRAGE", or something site-specific, change the value below.
+# which text we expect to find in that field.
+#
+# Note that the folder name and the DICOM header do not always match exactly.
+# In the workshop data, the folder name ends with _RMS, but the DICOM
+# SeriesDescription is just tfl_mgh_me_adult.
+# If your sequence is named "t1_mprage", "MPRAGE", or something site-specific,
+# change the value below.
 TARGET_SEQUENCE_NAME_FIELD="SeriesDescription"
-TARGET_SEQUENCE_NAME_TEXT="tfl_mgh_me_adult_RMS"
+TARGET_SEQUENCE_NAME_TEXT="tfl_mgh_me_adult"
 
 # This optional setting lets you also check a sequence ID field.
 # Leave TARGET_SEQUENCE_ID_TEXT empty to ignore this check.
