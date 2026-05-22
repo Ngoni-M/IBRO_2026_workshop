@@ -104,11 +104,11 @@ write_recon_all_job()
     {
         echo "#! /bin/bash"
         echo
-        echo "#PBS -l select=2:ncpus=24"
+        echo "#PBS -l select=1:ncpus=1"
         echo "#PBS -l walltime=48:00:00"
         echo "#PBS -N recon-all-${subject_label}"
         echo "#PBS -P WCHPC"
-        echo "#PBS -q normal"
+        echo "#PBS -q R7293126"
         echo
         echo "recon-all -i \"$t1_dicom\" -sd \"$subjects_dir\" -s \"$subject_label\" -all"
     } > "$job_file"

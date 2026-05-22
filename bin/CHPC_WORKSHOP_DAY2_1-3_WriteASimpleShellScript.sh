@@ -93,11 +93,11 @@ JOB_FILE=$JOB_DIR/recon-all-$SUBJECT.job
 
 echo "#! /bin/bash" > $JOB_FILE
 echo "" >> $JOB_FILE
-echo "#PBS -l select=2:ncpus=24" >> $JOB_FILE
+echo "#PBS -l select=1:ncpus=1" >> $JOB_FILE
 echo "#PBS -l walltime=48:00:00" >> $JOB_FILE
 echo "#PBS -P WCHPC" >> $JOB_FILE
 echo "#PBS -N recon-all-$SUBJECT" >> $JOB_FILE
-echo "#PBS -q normal" >> $JOB_FILE
+echo "#PBS -q R7293126" >> $JOB_FILE
 echo "" >> $JOB_FILE
 echo "recon-all -i $FIRST_DICOM_FILE -s $SUBJECT -sd $SUBJECTS_DIR -motioncor -nuintensitycor" >> $JOB_FILE
 
@@ -196,8 +196,6 @@ CHPC_WORKSHOP_DAY2_submitReconAllJobs ExampleSubjectsFreeSurfer_Output
 qstat | grep $USER
 
 # The full recon-all command will likely take a few hours.
-
-
 
 
 
