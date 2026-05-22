@@ -28,10 +28,9 @@ export PS1="\[\e[0;31m\][\u@\h \W]\$ \[\e[m\]"
 
 # Very useful: Setting up an interactive job alias
 
-alias interactiveJob="qsub -I -P HEAL0793 -q serial -l walltime=48:00:00"
+alias interactiveJob="qsub -I -P WCHPC -q serial -l walltime=48:00:00"
 #Replace this:                   ^^^^^^^^
 # With your study ID, or if you dont have one: WCHPC
-
 
 # Install modules...  (This is useful, as CHPC might already have things available.
 

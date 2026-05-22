@@ -6,7 +6,6 @@
 # Dependencies:
 #   This script expects FreeSurfer to be loaded and available in your shell.
 #   FreeSurfer provides the commands used here:
-#     unpacksdcmdir   - reads DICOM folders and creates scan.dat
 #     mri_probedicom  - reads values from DICOM headers
 #     recon-all       - runs the FreeSurfer reconstruction
 #
@@ -16,6 +15,46 @@
 #     -sd /path/to/freesurfer_subjects
 
 set -u
+
+# -------------------------------------------------------------------------
+# Settings learners may need to change
+# -------------------------------------------------------------------------
+#
+# This script looks for the anatomical T1 DICOM sequence that should be sent
+# to recon-all.
+#
+# The workshop data stores that sequence in a folder with RMS in the name,
+# for example:
+#
+#   3_tfl_mgh_me_adult_RMS
+#
+# If your scanner names the T1 sequence folder differently, change this first.
+TARGET_SEQUENCE_DIR_PATTERN="*RMS*"
+
+# After we find a possible sequence folder, we inspect one DICOM file from it.
+# mri_probedicom prints DICOM header fields such as:
+#
+#   SeriesDescription
+#   ProtocolName
+#   SeriesNumber
+#   PatientName
+#   StudyDate
+#   StudyTime
+#
+# These two settings say which DICOM field we treat as the sequence name, and
+# which text we expect to find in that field.  If your sequence is named
+# "t1_mprage", "MPRAGE", or something site-specific, change the value below.
+TARGET_SEQUENCE_NAME_FIELD="SeriesDescription"
+TARGET_SEQUENCE_NAME_TEXT="tfl_mgh_me_adult_RMS"
+
+# This optional setting lets you also check a sequence ID field.
+# Leave TARGET_SEQUENCE_ID_TEXT empty to ignore this check.
+#
+# Example:
+#   TARGET_SEQUENCE_ID_FIELD="SeriesNumber"
+#   TARGET_SEQUENCE_ID_TEXT="3"
+TARGET_SEQUENCE_ID_FIELD="SeriesNumber"
+TARGET_SEQUENCE_ID_TEXT=""
 
 show_usage()
 {
@@ -35,41 +74,81 @@ find_participant_dirs()
 {
     local dicom_parent_dir="$1"
 
-    # The workshop DICOM folders are usually named with RMS.
-    # Each matching folder is treated as one participant.
-    find "$dicom_parent_dir" -type d -name "*RMS*" | sort
+    # The workshop T1 sequence folders are usually named with RMS.
+    # Each matching folder is treated as the T1 sequence for one participant.
+    find "$dicom_parent_dir" -type d -name "$TARGET_SEQUENCE_DIR_PATTERN" | sort
+}
+
+read_dicom_field()
+{
+    local dicom_file="$1"
+    local field_name="$2"
+
+    # mri_probedicom prints many header fields.
+    # This awk command finds the line whose first word is the field name and
+    # prints the value beside it.
+    mri_probedicom --i "$dicom_file" |
+        awk -v field_name="$field_name" '$1 == field_name {print $2; exit}'
+}
+
+find_first_dicom_file()
+{
+    local sequence_dir="$1"
+
+    # We only need one file from the sequence folder to read the DICOM header.
+    # The header tells us what sequence this folder contains.
+    find "$sequence_dir" -maxdepth 1 -type f | sort | head -n 1
 }
 
 find_t1_dicom()
 {
-    local participant_dicom_dir="$1"
-    local scan_file="$participant_dicom_dir/scan.dat"
-    local scan_name=""
+    local sequence_dir="$1"
+    local first_dicom=""
+    local sequence_name=""
+    local sequence_id=""
 
-    # FreeSurfer's unpacksdcmdir creates scan.dat.
-    # scan.dat helps us choose the T1 scan in a predictable way.
-    if [ ! -f "$scan_file" ]; then
-        echo "Creating scan.dat for this participant..." >&2
-        unpacksdcmdir \
-            -scanonly "$scan_file" \
-            -src "$participant_dicom_dir" \
-            -targ "$participant_dicom_dir" >&2
-    fi
+    first_dicom=$(find_first_dicom_file "$sequence_dir")
 
-    # Workshop data often labels the T1 scan as "unknown".
-    scan_name=$(grep unknown "$scan_file" | awk '{print $8}' | head -n 1)
-
-    # If that label is not present, try a common MPRAGE label.
-    if [ -z "$scan_name" ]; then
-        scan_name=$(grep t1_mprage "$scan_file" | awk '{print $8}' | head -n 1)
-    fi
-
-    if [ -z "$scan_name" ]; then
-        echo "Could not find a T1 scan in $scan_file" >&2
+    if [ -z "$first_dicom" ]; then
+        echo "Could not find a DICOM file in: $sequence_dir" >&2
         exit 1
     fi
 
-    echo "$participant_dicom_dir/$scan_name"
+    sequence_name=$(read_dicom_field "$first_dicom" "$TARGET_SEQUENCE_NAME_FIELD")
+
+    if [ -z "$sequence_name" ]; then
+        echo "Could not read $TARGET_SEQUENCE_NAME_FIELD from $first_dicom" >&2
+        exit 1
+    fi
+
+    if [[ "$sequence_name" != *"$TARGET_SEQUENCE_NAME_TEXT"* ]]; then
+        echo "This sequence does not match the expected T1 sequence name." >&2
+        echo "  DICOM file: $first_dicom" >&2
+        echo "  Field checked: $TARGET_SEQUENCE_NAME_FIELD" >&2
+        echo "  Expected text: $TARGET_SEQUENCE_NAME_TEXT" >&2
+        echo "  Actual value: $sequence_name" >&2
+        exit 1
+    fi
+
+    if [ -n "$TARGET_SEQUENCE_ID_TEXT" ]; then
+        sequence_id=$(read_dicom_field "$first_dicom" "$TARGET_SEQUENCE_ID_FIELD")
+
+        if [ -z "$sequence_id" ]; then
+            echo "Could not read $TARGET_SEQUENCE_ID_FIELD from $first_dicom" >&2
+            exit 1
+        fi
+
+        if [[ "$sequence_id" != *"$TARGET_SEQUENCE_ID_TEXT"* ]]; then
+            echo "This sequence does not match the expected T1 sequence ID." >&2
+            echo "  DICOM file: $first_dicom" >&2
+            echo "  Field checked: $TARGET_SEQUENCE_ID_FIELD" >&2
+            echo "  Expected text: $TARGET_SEQUENCE_ID_TEXT" >&2
+            echo "  Actual value: $sequence_id" >&2
+            exit 1
+        fi
+    fi
+
+    echo "$first_dicom"
 }
 
 read_subject_label()
@@ -80,9 +159,9 @@ read_subject_label()
     local study_time=""
 
     # mri_probedicom reads the DICOM header.
-    patient_name=$(mri_probedicom --i "$t1_dicom" | grep PatientName | awk '{print $2}' | head -n 1)
-    study_date=$(mri_probedicom --i "$t1_dicom" | grep StudyDate | awk '{print $2}' | head -n 1)
-    study_time=$(mri_probedicom --i "$t1_dicom" | grep StudyTime | awk '{print $2}' | cut -c 1-4 | head -n 1)
+    patient_name=$(read_dicom_field "$t1_dicom" "PatientName")
+    study_date=$(read_dicom_field "$t1_dicom" "StudyDate")
+    study_time=$(read_dicom_field "$t1_dicom" "StudyTime" | cut -c 1-4)
 
     if [ -z "$patient_name" ] || [ -z "$study_date" ] || [ -z "$study_time" ]; then
         echo "Could not read PatientName, StudyDate, and StudyTime from $t1_dicom" >&2
@@ -194,7 +273,7 @@ mapfile -t PARTICIPANT_DIRS < <(find_participant_dirs "$DICOM_DIR")
 
 if [ "${#PARTICIPANT_DIRS[@]}" -eq 0 ]; then
     echo "No participant DICOM folders found in: $DICOM_DIR" >&2
-    echo "Expected folders with RMS in the folder name." >&2
+    echo "Expected folders matching: $TARGET_SEQUENCE_DIR_PATTERN" >&2
     exit 1
 fi
 
