@@ -70,7 +70,7 @@ show_usage()
     echo "    -sd /path/to/freesurfer_subjects"
 }
 
-find_participant_dirs()
+find_sequence_dirs()
 {
     local dicom_parent_dir="$1"
 
@@ -95,9 +95,12 @@ find_first_dicom_file()
 {
     local sequence_dir="$1"
 
-    # We only need one file from the sequence folder to read the DICOM header.
-    # The header tells us what sequence this folder contains.
-    find "$sequence_dir" -maxdepth 1 -type f | sort | head -n 1
+    # Each sequence folder contains many DICOM files ending in .dcm.
+    # They all belong to the same sequence, so one file is enough for the
+    # header information we need here.
+    #
+    # We sort before taking the first file so the choice is predictable.
+    find "$sequence_dir" -maxdepth 1 -type f -name "*.dcm" | sort | head -n 1
 }
 
 find_t1_dicom()
@@ -201,18 +204,18 @@ write_recon_all_job()
 
 prepare_one_participant()
 {
-    local participant_dicom_dir="$1"
+    local sequence_dir="$1"
     local subjects_dir="$2"
     local t1_dicom=""
     local subject_label=""
 
-    echo "DICOM directory:"
-    echo "  $participant_dicom_dir"
+    echo "T1 sequence directory:"
+    echo "  $sequence_dir"
 
-    t1_dicom=$(find_t1_dicom "$participant_dicom_dir")
+    t1_dicom=$(find_t1_dicom "$sequence_dir")
     subject_label=$(read_subject_label "$t1_dicom")
 
-    echo "T1 DICOM:"
+    echo "First DICOM file used for header information:"
     echo "  $t1_dicom"
     echo "Subject label from DICOM header:"
     echo "  $subject_label"
@@ -269,17 +272,17 @@ fi
 
 mkdir -p "$SUBJECTS_DIR"
 
-mapfile -t PARTICIPANT_DIRS < <(find_participant_dirs "$DICOM_DIR")
+mapfile -t SEQUENCE_DIRS < <(find_sequence_dirs "$DICOM_DIR")
 
-if [ "${#PARTICIPANT_DIRS[@]}" -eq 0 ]; then
-    echo "No participant DICOM folders found in: $DICOM_DIR" >&2
+if [ "${#SEQUENCE_DIRS[@]}" -eq 0 ]; then
+    echo "No matching T1 sequence folders found in: $DICOM_DIR" >&2
     echo "Expected folders matching: $TARGET_SEQUENCE_DIR_PATTERN" >&2
     exit 1
 fi
 
-echo "Found ${#PARTICIPANT_DIRS[@]} participant DICOM folder(s)."
+echo "Found ${#SEQUENCE_DIRS[@]} matching T1 sequence folder(s)."
 echo
 
-for PARTICIPANT_DICOM_DIR in "${PARTICIPANT_DIRS[@]}"; do
-    prepare_one_participant "$PARTICIPANT_DICOM_DIR" "$SUBJECTS_DIR"
+for SEQUENCE_DIR in "${SEQUENCE_DIRS[@]}"; do
+    prepare_one_participant "$SEQUENCE_DIR" "$SUBJECTS_DIR"
 done
