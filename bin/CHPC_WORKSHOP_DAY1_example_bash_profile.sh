@@ -55,8 +55,9 @@ echo "bash_profile: FREESURFER_HOME is now $FREESURFER_HOME..." # Double check t
 source $FREESURFER_HOME/SetUpFreeSurfer.sh
 export PATH
 
-# Set this to point to your license file.
-FS_LICENSE=
+# Set this to point to your license file. See Freesurfer basics: you need to copy this to your home
+# on CHPC
+export FS_LICENSE=$HOME/license.txt
 
 # Add symlinks to LD_LIBRARY path: This is for code that freesurfer depends on. Make sure you copy libGLU over, and that you have read permissions.
 
