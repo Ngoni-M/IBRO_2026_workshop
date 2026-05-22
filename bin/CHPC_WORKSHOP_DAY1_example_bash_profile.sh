@@ -80,3 +80,6 @@ PATH=${FSLDIR}/bin:${PATH}
 . ${FSLDIR}/etc/fslconf/fsl.sh
 export FSLDIR PATH
 
+# To add your workshopfiles to your environment do:
+PATH=$PATH:/home/splessis/IBRO_2026_workshop/bin
+
