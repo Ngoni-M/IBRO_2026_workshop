@@ -1,0 +1,201 @@
+#! /bin/bash
+
+# Prepare FreeSurfer recon-all jobs from participant DICOM folders.
+# Beginners: Dont worry how this script works. You just need to be able to use it. So pay attention to the help.
+#
+# Dependencies:
+#   This script expects FreeSurfer to be loaded and available in your shell.
+#   FreeSurfer provides the commands used here:
+#     unpacksdcmdir   - reads DICOM folders and creates scan.dat
+#     mri_probedicom  - reads values from DICOM headers
+#     recon-all       - runs the FreeSurfer reconstruction
+#
+# Example:
+#   CHPC_WORKSHOP_DAY2_clustersurfManual2 \
+#     -d /path/to/all_participant_dicoms \
+#     -sd /path/to/freesurfer_subjects
+
+set -u
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+show_usage()
+{
+    echo "Beginners: Dont worry how this script works. You just need to be able to use it." 
+    echo "So pay attention to the help below."
+
+    echo "Usage:"
+    echo "  $0 -d <dicom_parent_dir> -sd <subjects_dir>"
+    echo
+    echo "Example:"
+    echo "  CHPC_WORKSHOP_DAY2_clustersurfManual2 \\"
+    echo "    -d /path/to/all_participant_dicoms \\"
+    echo "    -sd /path/to/freesurfer_subjects"
+}
+
+find_participant_dirs()
+{
+    local dicom_parent_dir="$1"
+
+    # The workshop DICOM folders are usually named with RMS.
+    # Each matching folder is treated as one participant.
+    find "$dicom_parent_dir" -type d -name "*RMS*" | sort
+}
+
+find_t1_dicom()
+{
+    local participant_dicom_dir="$1"
+    local scan_file="$participant_dicom_dir/scan.dat"
+    local scan_name=""
+
+    # FreeSurfer's unpacksdcmdir creates scan.dat.
+    # scan.dat helps us choose the T1 scan in a predictable way.
+    if [ ! -f "$scan_file" ]; then
+        echo "Creating scan.dat for this participant..." >&2
+        unpacksdcmdir \
+            -scanonly "$scan_file" \
+            -src "$participant_dicom_dir" \
+            -targ "$participant_dicom_dir" >&2
+    fi
+
+    # Workshop data often labels the T1 scan as "unknown".
+    scan_name=$(grep unknown "$scan_file" | awk '{print $8}' | head -n 1)
+
+    # If that label is not present, try a common MPRAGE label.
+    if [ -z "$scan_name" ]; then
+        scan_name=$(grep t1_mprage "$scan_file" | awk '{print $8}' | head -n 1)
+    fi
+
+    if [ -z "$scan_name" ]; then
+        echo "Could not find a T1 scan in $scan_file" >&2
+        exit 1
+    fi
+
+    echo "$participant_dicom_dir/$scan_name"
+}
+
+read_subject_header()
+{
+    local t1_dicom="$1"
+    local patient_name=""
+    local study_date=""
+    local study_time=""
+
+    # mri_probedicom reads the DICOM header.
+    patient_name=$(mri_probedicom --i "$t1_dicom" | grep PatientName | awk '{print $2}' | head -n 1)
+    study_date=$(mri_probedicom --i "$t1_dicom" | grep StudyDate | awk '{print $2}' | head -n 1)
+    study_time=$(mri_probedicom --i "$t1_dicom" | grep StudyTime | awk '{print $2}' | cut -c 1-4 | head -n 1)
+
+    if [ -z "$patient_name" ] || [ -z "$study_date" ] || [ -z "$study_time" ]; then
+        echo "Could not read PatientName, StudyDate, and StudyTime from $t1_dicom" >&2
+        exit 1
+    fi
+
+    echo "${study_date}_${study_time}_${patient_name}"
+}
+
+write_recon_all_job()
+{
+    local t1_dicom="$1"
+    local subjects_dir="$2"
+    local subject_label="$3"
+    local job_file="$subjects_dir/jobFiles/recon-all-${subject_label}.job"
+
+    mkdir -p "$subjects_dir/jobFiles"
+
+    # Keep the same CHPC job header used elsewhere in the workshop.
+    head -n 7 "$SCRIPT_DIR/CHPC_WORKSHOP_DAY2_clustersurfRunArray.job" > "$job_file"
+
+    echo "recon-all -i \"$t1_dicom\" -sd \"$subjects_dir\" -s \"$subject_label\" -all" >> "$job_file"
+
+    echo "Prepared job file:"
+    echo "  $job_file"
+    echo
+    echo "The recon-all command is:"
+    echo "  recon-all -i \"$t1_dicom\" -sd \"$subjects_dir\" -s \"$subject_label\" -all"
+}
+
+prepare_one_participant()
+{
+    local participant_dicom_dir="$1"
+    local subjects_dir="$2"
+    local t1_dicom=""
+    local subject_label=""
+
+    echo "DICOM directory:"
+    echo "  $participant_dicom_dir"
+
+    t1_dicom=$(find_t1_dicom "$participant_dicom_dir")
+    subject_label=$(read_subject_header "$t1_dicom")
+
+    echo "T1 DICOM:"
+    echo "  $t1_dicom"
+    echo "Subject label from DICOM header:"
+    echo "  $subject_label"
+    echo
+
+    write_recon_all_job "$t1_dicom" "$subjects_dir" "$subject_label"
+    echo
+}
+
+DICOM_DIR=""
+SUBJECTS_DIR=""
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -d|--dicom-dir)
+            if [ "$#" -lt 2 ]; then
+                echo "Missing value for $1" >&2
+                show_usage
+                exit 1
+            fi
+            DICOM_DIR=$(readlink -f "$2")
+            shift 2
+            ;;
+        -sd|--subjects-dir|-subj)
+            if [ "$#" -lt 2 ]; then
+                echo "Missing value for $1" >&2
+                show_usage
+                exit 1
+            fi
+            SUBJECTS_DIR=$(readlink -f "$2")
+            shift 2
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+if [ -z "$DICOM_DIR" ] || [ -z "$SUBJECTS_DIR" ]; then
+    show_usage
+    exit 1
+fi
+
+if [ ! -d "$DICOM_DIR" ]; then
+    echo "DICOM directory does not exist: $DICOM_DIR" >&2
+    exit 1
+fi
+
+mkdir -p "$SUBJECTS_DIR"
+
+mapfile -t PARTICIPANT_DIRS < <(find_participant_dirs "$DICOM_DIR")
+
+if [ "${#PARTICIPANT_DIRS[@]}" -eq 0 ]; then
+    echo "No participant DICOM folders found in: $DICOM_DIR" >&2
+    echo "Expected folders with RMS in the folder name." >&2
+    exit 1
+fi
+
+echo "Found ${#PARTICIPANT_DIRS[@]} participant DICOM folder(s)."
+echo
+
+for PARTICIPANT_DICOM_DIR in "${PARTICIPANT_DIRS[@]}"; do
+    prepare_one_participant "$PARTICIPANT_DICOM_DIR" "$SUBJECTS_DIR"
+done

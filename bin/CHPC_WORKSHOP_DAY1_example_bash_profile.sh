@@ -64,16 +64,6 @@ export FS_LICENSE=$HOME/license.txt
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/lustre/users/splessis/cubic/libGLU
 export LD_LIBRARY_PATH
 
-# More exmaples of adding things to your PATH: Art toolbox for ACPC orientation, Tortoise, FSL etc etc.
-
-
-export PATH=/mnt/lustre/users/splessis/cubic/splessis2/TORTOISE_V3.1.1/DIFFPREPV311/bin/bin:$PATH
-export PATH=/mnt/lustre/users/splessis/cubic/splessis2/TORTOISE_V3.1.1/DIFFCALC/DIFFCALCV311:$PATH
-export PATH=/mnt/lustre/users/splessis/cubic/splessis2/TORTOISE_V3.1.1/DRBUDDIV311/bin:$PATH
-export PATH=/mnt/lustre/users/splessis/cubic/splessis2/TORTOISE_V3.1.1/DRTAMASV311/bin:$PATH
-export PATH=/home/splessis/clustersurf_bin/acpcdetect_v2.0_LinuxCentOS6.7/bin:$PATH
-export ARTHOME=/home/splessis/clustersurf_bin/acpcdetect_v2.0_LinuxCentOS6.7
-
 # Add fsl
 
 # FSL Configuration
