@@ -6,11 +6,21 @@ Welcome to the IBRO 2026 Workshop. These are the principles we will follow throu
 
 ## Extra Quick Guides
 
-Please also check out the [`docs/`](docs/) folder. It contains short practical guides for workshop setup tasks, including Docker notes, basic editor help, and SSH key setup.
+Please also check out the [`docs/`](docs/) folder. It contains short practical guides for workshop setup tasks, including basic editor help, CHPC notes, SSH key setup, and FreeSurfer license setup.
 
 ---
 
 # BEFORE THE WORKSHOP
+
+---
+
+## Docker Setup
+
+Docker setup instructions live in the dedicated repository:
+
+<https://github.com/stefandup/IBRO_2026_DOCKER>
+
+Please use that repository's README as the current source of truth for installing Docker, setting up the workshop container, and launching the environment.
 
 ---
 
