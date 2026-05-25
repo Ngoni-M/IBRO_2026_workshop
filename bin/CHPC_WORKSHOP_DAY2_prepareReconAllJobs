@@ -2,7 +2,11 @@
 
 # Prepare FreeSurfer recon-all jobs from participant DICOM folders.
 # Beginners: Dont worry how this script works. You just need to be able to use it. So pay attention to the help.
-#
+
+###################################################################################
+# NB Run this script as an interactive job. Dont run it directly on the headnode! #
+###################################################################################
+
 # Dependencies:
 #   This script expects FreeSurfer to be loaded and available in your shell.
 #   FreeSurfer provides the commands used here:

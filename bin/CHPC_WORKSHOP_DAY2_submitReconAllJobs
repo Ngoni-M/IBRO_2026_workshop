@@ -1,6 +1,7 @@
 #! /bin/bash
 
 # Submit the job files prepared by CHPC_WORKSHOP_DAY2_prepareReconAllJobs.
+# Now that you have created your jobfiles, submit them to the cluser with this script.
 #
 # Example:
 #   CHPC_WORKSHOP_DAY2_submitReconAllJobs /path/to/freesurfer_subjects
@@ -45,6 +46,10 @@ if [ "${#JOB_FILES[@]}" -eq 0 ]; then
 fi
 
 for JOB_FILE in "${JOB_FILES[@]}"; do
+
+    # This is where all the action happens. It effecively just runs the jobfile. You can also do this manually if
+    # you suspect trouble in one of your subjects.
+
     qsub "$JOB_FILE"
     echo "Submitted job file: $JOB_FILE"
 done
