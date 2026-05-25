@@ -12,18 +12,6 @@ Please also check out the [`docs/`](docs/) folder. It contains short practical g
 
 # BEFORE THE WORKSHOP
 
----
-
-## Docker Setup
-
-Docker setup instructions live in the dedicated repository:
-
-<https://github.com/stefandup/IBRO_2026_DOCKER>
-
-Please use that repository's README as the current source of truth for installing Docker, setting up the workshop container, and launching the environment.
-
----
-
 # Installing WSL and VSCODE for the Workshop
 
 This guide is for **Windows users** who need to install WSL before the workshop.
@@ -442,6 +430,16 @@ The goal is to help you learn by doing. Without instructions like these, an AI a
 ---
 
 # THIS CAN BE DONE DURING THE WORKSHOP
+
+---
+
+## Docker Setup
+
+Docker setup instructions live in the dedicated repository:
+
+<https://github.com/stefandup/IBRO_2026_DOCKER>
+
+Please use that repository's README as the current source of truth for installing Docker, setting up the workshop container, and launching the environment.
 
 ---
 
