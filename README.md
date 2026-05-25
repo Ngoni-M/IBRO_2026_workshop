@@ -4,6 +4,10 @@ Welcome to the IBRO 2026 Workshop. These are the principles we will follow throu
 
 ![IBRO 2026 Workshop Principles](IBRO%202026%20Workshop%20Principles.png)
 
+## Extra Quick Guides
+
+Please also check out the [`docs/`](docs/) folder. It contains short practical guides for workshop setup tasks, including Docker notes, basic editor help, and SSH key setup.
+
 ---
 
 # BEFORE THE WORKSHOP
@@ -463,4 +467,3 @@ python helper_scripts/make_dummy_dicom_subjects.py
 This creates `dummy_data/` with 10 copied subjects named `subject1`, `subject2`, and so on. The generated folder is ignored by Git.
 
 ---
-
