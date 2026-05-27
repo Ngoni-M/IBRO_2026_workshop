@@ -1,4 +1,4 @@
-#!/bin/sh
+man#!/bin/sh
 
 #  CHPC_WORKSHOP_DAY2_AdvancedScriptWithFlags.sh
 #  

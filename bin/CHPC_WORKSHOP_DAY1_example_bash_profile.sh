@@ -46,9 +46,11 @@ module add afni/18.1.09
 module add fsl/6.0.4
 module add freesurfer/8.0.0-1
 
-#Install freesurfer (Note you need to provide your information here.)
+# Define YOUR subjects dir. (Remember to create it!!)
+SUBJECTS_DIR=/mnt/lustre/users/splessis/dummy_data
 
-export FREESURFER_HOME=/mnt/lustre/users/splessis/freesurfer
+echo "SUBJECTS_DIR is now $SUBJECTS_DIR"
+
 #Your info here!                          ^^^^^^
 
 echo "bash_profile: FREESURFER_HOME is now $FREESURFER_HOME..." # Double check that it is working properly.
