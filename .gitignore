@@ -1,5 +1,7 @@
 # Build folder and log file
 build/
 .venv/
+.vscode/
 dummy_data/
 build.log
+example_dir/

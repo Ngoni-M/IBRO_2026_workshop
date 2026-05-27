@@ -1,0 +1,94 @@
+#! /bin/bash
+
+# Read a few useful DICOM header fields for command-line demo purposes.
+#
+# Dependency:
+#   FreeSurfer provides mri_probedicom, which reads DICOM headers.
+#
+# Example:
+#   CHPC_WORKSHOP_DAY2_readDicomHeader /path/to/image.dcm
+
+set -u
+
+show_usage()
+{
+    echo "Usage:"
+    echo "  $0 <dicom_file>"
+    echo
+    echo "Example:"
+    echo "  CHPC_WORKSHOP_DAY2_readDicomHeader /path/to/image.dcm"
+}
+
+if [ "$#" -ne 1 ]; then
+    show_usage
+    exit 1
+fi
+
+DICOM_FILE="$1"
+
+if [ ! -f "$DICOM_FILE" ]; then
+    echo "DICOM file does not exist: $DICOM_FILE" >&2
+    exit 1
+fi
+
+echo "DICOM file:"
+echo "  $DICOM_FILE"
+echo
+echo "Selected header fields:"
+
+# Some awk examples to try at the command line:
+#
+# Print the whole DICOM header:
+#   mri_probedicom --i your_file.dcm
+#
+# Print the first word from every line:
+#   mri_probedicom --i your_file.dcm | awk '{print $1}'
+#
+# Print the second word from every line:
+#   mri_probedicom --i your_file.dcm | awk '{print $2}'
+#
+# Print the whole line only when the first word is PatientName:
+#   mri_probedicom --i your_file.dcm | awk '$1 == "PatientName" {print}'
+#
+# Print only the second word from the PatientName line:
+#   mri_probedicom --i your_file.dcm | awk '$1 == "PatientName" {print $2}'
+#
+# Stop after the first PatientName line:
+#   mri_probedicom --i your_file.dcm | awk '$1 == "PatientName" {print $2; exit}'
+
+# mri_probedicom reads the DICOM header.
+# awk looks for the line where the first word is PatientName,
+# then prints the second word on that line.
+echo "PatientName:"
+mri_probedicom --i "$DICOM_FILE" |
+    awk '$1 == "PatientName" {print $2; exit}'
+
+echo
+
+# StudyDate is often useful because it tells us when the scan was acquired.
+echo "StudyDate:"
+mri_probedicom --i "$DICOM_FILE" |
+    awk '$1 == "StudyDate" {print $2; exit}'
+
+echo
+
+# SeriesDescription is useful for checking which scan sequence this file
+# belongs to, for example a T1 anatomical image or another MRI sequence.
+echo "SeriesDescription:"
+mri_probedicom --i "$DICOM_FILE" |
+    awk '$1 == "SeriesDescription" {print $2; exit}'
+
+echo
+echo "Basic image information:"
+
+# mri_info reads image information from the file.
+# This is useful for showing that the scan is stored as a matrix of numbers.
+# Look for fields such as width, height, depth, voxel sizes, and orientation.
+mri_info "$DICOM_FILE"
+
+echo
+echo "Voxel-to-RAS matrix:"
+
+# This matrix describes how voxel positions in the image map into scanner
+# space. It is one way MRI software knows where the image sits in the head.
+mri_info --vox2ras "$DICOM_FILE"
